@@ -1,0 +1,1199 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Landmark Creator</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            text-align: center;
+            margin: 0;
+            padding: 20px;
+            min-height: 100vh;
+            position: relative;
+        }
+        #map {
+            height: 500px;
+            width: 80%;
+            margin: 20px auto;
+            border: 2px solid black;
+            border-radius: 8px;
+            z-index: 1;
+        }
+        .button-container {
+            display: flex;
+            gap: 10px;
+            margin: 10px 0;
+        }
+        button {
+            margin: 10px;
+            padding: 10px 20px;
+            background-color: #007BFF;
+            color: white;
+            border: none;
+            cursor: pointer;
+            border-radius: 5px;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0,0,0,0.5);
+            z-index: 1000;
+            overflow-y: auto;
+        }
+        .modal-content {
+            background-color: white;
+            margin: 5% auto;
+            padding: 20px;
+            border-radius: 5px;
+            width: 60%;
+            max-width: 500px;
+            position: relative;
+            z-index: 1001;
+            max-height: 80vh;
+            overflow-y: auto;
+        }
+        .form-group {
+            margin: 10px 0;
+            text-align: left;
+        }
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+        }
+        .form-group input, .form-group textarea, .form-group select {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+        .landmark-list {
+            text-align: left;
+            margin: 20px auto;
+            width: 80%;
+        }
+        .landmark-item {
+            background-color: #f8f9fa;
+            padding: 15px;
+            margin-bottom: 10px;
+            border-radius: 5px;
+            border: 1px solid #ddd;
+            position: relative;
+            min-height: 120px;
+            padding-right: 150px;
+        }
+        .landmark-item.visited {
+            border-left: 5px solid #28a745;
+        }
+        .landmark-item.not-visited {
+            border-left: 5px solid #dc3545;
+        }
+        .visit-status {
+            position: absolute;
+            right: 15px;
+            top: 15px;
+            padding: 3px 8px;
+            border-radius: 3px;
+            font-size: 12px;
+            font-weight: bold;
+        }
+        .visit-status.visited {
+            background-color: #28a745;
+            color: white;
+        }
+        .visit-status.not-visited {
+            background-color: #dc3545;
+            color: white;
+        }
+        .landmark-item .actions {
+            position: absolute;
+            right: 15px;
+            top: 15px;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            width: 120px;
+        }
+        .landmark-item .actions button {
+            width: 100%;
+            margin: 0;
+            padding: 8px;
+            font-size: 14px;
+            border-radius: 5px;
+            border: none;
+            cursor: pointer;
+            transition: opacity 0.2s;
+        }
+        .landmark-item .actions button:hover {
+            opacity: 0.9;
+        }
+        .edit-btn {
+            background-color: #ffc107;
+            color: #000;
+        }
+        .delete-btn {
+            background-color: #dc3545;
+            color: white;
+        }
+        .visit-btn {
+            background-color: #0d6efd;
+            color: white;
+        }
+        .success-message {
+            background-color: #d4edda;
+            color: #155724;
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 4px;
+            display: none;
+        }
+        #landmarksList {
+            margin-top: 20px;
+            width: 80%;
+            margin-left: auto;
+            margin-right: auto;
+        }
+        .landmark-checkbox {
+            margin-right: 10px;
+        }
+        .plan-landmark-list {
+            max-height: 300px;
+            overflow-y: auto;
+            margin-bottom: 20px;
+            border: 1px solid #ddd;
+            padding: 10px;
+            border-radius: 4px;
+        }
+        .plan-landmark-item {
+            margin-bottom: 10px;
+            padding: 10px;
+            background-color: #f8f9fa;
+            border-radius: 4px;
+        }
+        .plan-notes {
+            width: 100%;
+            margin-top: 5px;
+        }
+        .plan-list {
+            margin-top: 20px;
+        }
+        .plan-item {
+            border: 1px solid #ddd;
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 5px;
+        }
+        .plan-item h4 {
+            margin-top: 0;
+        }
+        .plan-landmarks {
+            margin-left: 20px;
+        }
+        .plan-landmark {
+            margin-left: 20px;
+            padding: 5px;
+            border-left: 3px solid #007bff;
+        }
+        .landmark-selection-item {
+            border: 1px solid #ddd;
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 5px;
+        }
+        .landmark-checkbox-group {
+            margin-bottom: 10px;
+        }
+        .landmark-notes {
+            margin-left: 25px;
+        }
+        .landmark-notes textarea {
+            width: 100%;
+            margin-top: 5px;
+        }
+        .search-filter-container {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+            padding: 15px;
+            background-color: #f8f9fa;
+            border-radius: 5px;
+            align-items: center;
+        }
+        .search-box {
+            flex: 2;
+        }
+        .filter-box, .sort-box {
+            flex: 1;
+        }
+        .search-box input, .filter-box select, .sort-box select {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 14px;
+        }
+        .search-box input:focus, .filter-box select:focus, .sort-box select:focus {
+            outline: none;
+            border-color: #007bff;
+            box-shadow: 0 0 0 2px rgba(0,123,255,.25);
+        }
+    </style>
+</head>
+<body>
+    <h2>Click on the Map to Add Landmarks</h2>
+    <div id="map"></div>
+    <div id="selectedCoords" style="margin-top: 10px; font-weight: bold;">No location selected</div>
+
+    <div class="button-container">
+        <button onclick="showAddNotesModal()">Add Notes</button>
+        <button onclick="showVisitedLandmarksModal()">Visited Landmarks</button>
+        <button onclick="showCreateVisitingPlanModal()">Create Visiting Plan</button>
+        <button onclick="showVisitingPlansModal()">View Visiting Plans</button>
+    </div>
+
+    <div id="successMessage" class="success-message"></div>
+
+    <!-- Landmarks List -->
+    <div id="landmarksList" class="landmark-list">
+        <h3>All Landmarks</h3>
+        <div class="search-filter-container">
+            <div class="search-box">
+                <input type="text" id="searchInput" placeholder="Search landmarks...">
+            </div>
+            <div class="filter-box">
+                <select id="categoryFilter">
+                    <option value="">All Categories</option>
+                    <option value="historical">Historical</option>
+                    <option value="natural">Natural</option>
+                    <option value="cultural">Cultural</option>
+                </select>
+            </div>
+            <div class="sort-box">
+                <select id="sortOption">
+                    <option value="name">Sort by Name</option>
+                    <option value="category">Sort by Category</option>
+                    <option value="date">Sort by Date Added</option>
+                </select>
+            </div>
+        </div>
+        <div id="landmarksContainer"></div>
+    </div>
+
+    <!-- Add Notes Modal -->
+    <div id="addNotesModal" class="modal">
+        <div class="modal-content">
+            <h3>Add Notes to Landmark</h3>
+            <div class="form-group">
+                <label for="landmarkId">Landmark ID:</label>
+                <input type="text" id="landmarkId" required placeholder="Enter a unique ID (e.g., 1, 2, 3)">
+            </div>
+            <div class="form-group">
+                <label for="landmarkName">Landmark Name:</label>
+                <input type="text" id="landmarkName" required>
+            </div>
+            <div class="form-group">
+                <label for="category">Category:</label>
+                <select id="category">
+                    <option value="historical">Historical</option>
+                    <option value="natural">Natural</option>
+                    <option value="cultural">Cultural</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label for="description">Description:</label>
+                <textarea id="description" rows="4"></textarea>
+            </div>
+            <div class="form-group">
+                <label for="notes">Notes:</label>
+                <textarea id="notes" rows="4"></textarea>
+            </div>
+            <button onclick="saveNotes()">Save</button>
+            <button onclick="closeModal('addNotesModal')">Cancel</button>
+        </div>
+    </div>
+
+    <!-- Edit Landmark Modal -->
+    <div id="editLandmarkModal" class="modal">
+        <div class="modal-content">
+            <h3>Edit Landmark</h3>
+            <div class="form-group">
+                <label for="editLandmarkId">Landmark ID:</label>
+                <input type="text" id="editLandmarkId" readonly>
+            </div>
+            <div class="form-group">
+                <label for="editLandmarkName">Landmark Name:</label>
+                <input type="text" id="editLandmarkName" required>
+            </div>
+            <div class="form-group">
+                <label for="editDescription">Description:</label>
+                <textarea id="editDescription" rows="4"></textarea>
+            </div>
+            <div class="form-group">
+                <label for="editNotes">Notes:</label>
+                <textarea id="editNotes" rows="4"></textarea>
+            </div>
+            <div class="form-group">
+                <label for="editCategory">Category:</label>
+                <select id="editCategory">
+                    <option value="historical">Historical</option>
+                    <option value="natural">Natural</option>
+                    <option value="cultural">Cultural</option>
+                </select>
+            </div>
+            <button onclick="updateLandmark()">Update</button>
+            <button type="button" onclick="closeModal('editLandmarkModal')">Cancel</button>
+        </div>
+    </div>
+
+    <!-- Visited Landmarks Modal -->
+    <div id="visitedLandmarksModal" class="modal">
+        <div class="modal-content">
+            <h3>Visited Landmarks</h3>
+            <div id="visitedLandmarksContainer"></div>
+            <button onclick="closeModal('visitedLandmarksModal')">Close</button>
+        </div>
+    </div>
+
+    <!-- Create Visiting Plan Modal -->
+    <div id="createVisitingPlanModal" class="modal">
+        <div class="modal-content">
+            <h2>Create New Visiting Plan</h2>
+            <div class="form-group">
+                <label for="planName">Plan Name:</label>
+                <input type="text" id="planName" required>
+            </div>
+            <div class="form-group">
+                <label for="planVisitorName">Visitor Name:</label>
+                <input type="text" id="planVisitorName" required>
+            </div>
+            <div class="form-group">
+                <label for="planGeneralNotes">General Notes:</label>
+                <textarea id="planGeneralNotes" rows="3"></textarea>
+            </div>
+            <div class="form-group">
+                <h3>Select Landmarks to Visit:</h3>
+                <div id="landmarkSelection"></div>
+            </div>
+            <button type="button" onclick="createVisitingPlan()">Create Plan</button>
+            <button type="button" onclick="closeModal('createVisitingPlanModal')">Cancel</button>
+        </div>
+    </div>
+
+    <!-- Visiting Plans Modal -->
+    <div id="visitingPlansModal" class="modal">
+        <div class="modal-content">
+            <h2>Your Visiting Plans</h2>
+            <div id="visitingPlansContainer"></div>
+            <button onclick="closeModal('visitingPlansModal')">Close</button>
+        </div>
+    </div>
+
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script>
+        const map = L.map('map').setView([38.9637, 35.2433], 5); // Centered on Turkey
+
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            maxZoom: 19,
+            attribution: '&copy; <a href="http://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+        }).addTo(map);
+
+        let selectedLocation = null;
+        let marker = null;
+        const selectedCoordsDiv = document.getElementById('selectedCoords');
+
+        map.on('click', function(e) {
+            selectedLocation = e.latlng;
+            selectedCoordsDiv.textContent = `Selected: Lat: ${selectedLocation.lat.toFixed(5)}, Lng: ${selectedLocation.lng.toFixed(5)}`;
+
+            if (marker) {
+                marker.setLatLng(selectedLocation);
+            } else {
+                marker = L.marker(selectedLocation).addTo(map);
+            }
+            // Automatically open modal is removed from here
+        });
+
+        const addNotesModal = document.getElementById('addNotesModal');
+        const visitedLandmarksModal = document.getElementById('visitedLandmarksModal');
+        const createPlanModal = document.getElementById('createVisitingPlanModal');
+        const viewPlansModal = document.getElementById('viewVisitingPlansModal');
+        const editLandmarkModal = document.getElementById('editLandmarkModal');
+        const successMessage = document.getElementById('successMessage');
+        const landmarksContainer = document.getElementById('landmarksContainer');
+        const visitedLandmarksContainer = document.getElementById('visitedLandmarksContainer');
+        const planLandmarksContainer = document.getElementById('landmarkSelection');
+        const viewPlansContainer = document.getElementById('viewPlansContainer');
+
+        // Add Landmark Form elements
+        const landmarkIdInput = document.getElementById('landmarkId');
+        const landmarkNameInput = document.getElementById('landmarkName');
+        const landmarkDescInput = document.getElementById('description');
+        const landmarkNotesInput = document.getElementById('notes');
+        const landmarkCategoryInput = document.getElementById('category');
+
+        // Edit Landmark Form elements
+        const editLandmarkIdInput = document.getElementById('editLandmarkId');
+        const editLandmarkNameInput = document.getElementById('editLandmarkName');
+        const editLandmarkDescInput = document.getElementById('editDescription');
+        const editLandmarkNotesInput = document.getElementById('editNotes');
+        const editLandmarkCategoryInput = document.getElementById('editCategory');
+
+        // Close modal functionality
+        document.querySelectorAll('.modal').forEach(modal => {
+            modal.addEventListener('click', (event) => {
+                if (event.target === modal) {
+                    closeModal(modal.id);
+                }
+            });
+        });
+
+        function showModal(id) {
+            document.getElementById(id).style.display = 'block';
+        }
+
+        function closeModal(id) {
+            const modal = document.getElementById(id);
+            modal.style.display = 'none';
+            // Clear form fields when closing
+            const forms = modal.querySelectorAll('form');
+            // Check if forms exist before trying to reset
+            if (forms && forms.length > 0) { 
+                forms.forEach(form => form.reset());
+            }
+            // No need to manually clear inputs here if form.reset() works or if fields are cleared on modal open
+            if (id === 'addNotesModal') {
+                 // Keep selected location after closing add notes modal
+                 // landmarkLatInput.value = '';
+                 // landmarkLngInput.value = '';
+            }
+            if (id === 'editLandmarkModal' && editLandmarkIdInput) {
+                editLandmarkIdInput.value = '';
+            }
+        }
+
+        function showSuccess(message) {
+            successMessage.textContent = message;
+            successMessage.style.display = 'block';
+            setTimeout(() => {
+                successMessage.style.display = 'none';
+            }, 3000);
+        }
+
+        // Function to show Add Notes Modal
+        function showAddNotesModal() {
+            if (!selectedLocation) {
+                alert('Please select a location on the map first!');
+                return;
+            }
+            // Pre-fill coordinates - REMOVED as inputs don't exist in this modal
+            // landmarkLatInput.value = selectedLocation.lat.toFixed(5);
+            // landmarkLngInput.value = selectedLocation.lng.toFixed(5);
+            showModal('addNotesModal');
+            // Clear other fields
+            landmarkNameInput.value = '';
+            landmarkDescInput.value = '';
+            // Reset category dropdown to the first option if it exists
+            if (landmarkCategoryInput && landmarkCategoryInput.options.length > 0) {
+                 landmarkCategoryInput.value = landmarkCategoryInput.options[0].value; 
+            } else if (landmarkCategoryInput) {
+                 landmarkCategoryInput.value = ''; // Or handle case where category doesn't exist/has no options
+            }
+        }
+
+        // Function to show Visited Landmarks Modal
+        async function showVisitedLandmarksModal() {
+            await fetchVisitedLandmarks();
+            showModal('visitedLandmarksModal');
+        }
+
+        // Function to show Create Visiting Plan Modal
+        async function showCreateVisitingPlanModal() {
+            await populateLandmarkSelectionForPlan();
+            showModal('createVisitingPlanModal');
+        }
+
+        // Function to show View Visiting Plans Modal
+        async function showVisitingPlansModal() {
+            console.log('showVisitingPlansModal called'); // Log function call
+            try {
+                await fetchVisitingPlans();
+                console.log('fetchVisitingPlans completed, attempting to show modal...'); // Log before showing modal
+                showModal('visitingPlansModal');
+                console.log('showModal called for visitingPlansModal'); // Log after showing modal
+            } catch (error) {
+                console.error('Error in showVisitingPlansModal:', error); // Log any error during the process
+                alert('Could not show visiting plans due to an error. See console for details.');
+            }
+        }
+
+        let allLandmarks = []; // Store all landmarks
+
+        // Fetch all landmarks
+        async function fetchLandmarks() {
+            try {
+                const response = await fetch('/api/landmarks');
+                if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+                allLandmarks = await response.json(); // Store in global variable
+                filterAndDisplayLandmarks();
+                // Clear and repopulate map markers
+                map.eachLayer(layer => {
+                    if (layer instanceof L.Marker && layer !== marker) {
+                        map.removeLayer(layer);
+                    }
+                });
+                allLandmarks.forEach(lm => {
+                    if (lm.location && lm.location.lat && lm.location.lng) {
+                        const popupContent = `<b>${lm.name}</b><br>${lm.description || ''}<br>Category: ${lm.category}<br><button onclick="showEditLandmarkModal('${lm.id}')">Edit</button> <button onclick="deleteLandmark('${lm.id}')">Delete</button>`;
+                        L.marker([lm.location.lat, lm.location.lng])
+                         .addTo(map)
+                         .bindPopup(popupContent);
+                    }
+                });
+            } catch (error) {
+                console.error('Error fetching landmarks:', error);
+                landmarksContainer.innerHTML = '<p>Error loading landmarks.</p>';
+            }
+        }
+
+        // Function to filter and display landmarks
+        function filterAndDisplayLandmarks() {
+            const searchTerm = document.getElementById('searchInput').value.toLowerCase();
+            const categoryFilter = document.getElementById('categoryFilter').value;
+            const sortOption = document.getElementById('sortOption').value;
+
+            let filteredLandmarks = allLandmarks.filter(landmark => {
+                const matchesSearch = landmark.name.toLowerCase().includes(searchTerm) ||
+                                    (landmark.description && landmark.description.toLowerCase().includes(searchTerm)) ||
+                                    (landmark.notes && landmark.notes.toLowerCase().includes(searchTerm));
+                const matchesCategory = !categoryFilter || landmark.category === categoryFilter;
+                return matchesSearch && matchesCategory;
+            });
+
+            // Sort landmarks
+            filteredLandmarks.sort((a, b) => {
+                switch (sortOption) {
+                    case 'name':
+                        return a.name.localeCompare(b.name);
+                    case 'category':
+                        return a.category.localeCompare(b.category);
+                    case 'date':
+                        return new Date(b.createdAt) - new Date(a.createdAt);
+                    default:
+                        return 0;
+                }
+            });
+
+            displayLandmarks(filteredLandmarks);
+        }
+
+        // Add event listeners for search, filter, and sort
+        document.getElementById('searchInput').addEventListener('input', filterAndDisplayLandmarks);
+        document.getElementById('categoryFilter').addEventListener('change', filterAndDisplayLandmarks);
+        document.getElementById('sortOption').addEventListener('change', filterAndDisplayLandmarks);
+
+        // Display landmarks in the list
+        function displayLandmarks(landmarks) {
+            landmarksContainer.innerHTML = '';
+            if (!landmarks || landmarks.length === 0) {
+                landmarksContainer.innerHTML = '<p>No landmarks found.</p>';
+                return;
+            }
+            landmarks.forEach(landmark => {
+                const div = document.createElement('div');
+                div.className = `landmark-item ${landmark.visited ? 'visited' : 'not-visited'}`;
+                
+                // Safely access location data
+                let locationString = 'Location data missing';
+                if (landmark.location && typeof landmark.location.lat === 'number' && typeof landmark.location.lng === 'number') {
+                    locationString = `Lat: ${landmark.location.lat.toFixed(5)}, Lng: ${landmark.location.lng.toFixed(5)}`;
+                } else if (landmark.location && landmark.location.latitude && landmark.location.longitude) {
+                    // Handle potential old format
+                    locationString = `Lat: ${Number(landmark.location.latitude).toFixed(5)}, Lng: ${Number(landmark.location.longitude).toFixed(5)}`;
+                } 
+
+                div.innerHTML = `
+                    <h4>${landmark.name}</h4>
+                    <p><strong>ID:</strong> ${landmark.id || 'N/A'}</p>
+                    <p><strong>Description:</strong> ${landmark.description || 'No description'}</p>
+                    <p><strong>Notes:</strong> ${landmark.notes || 'No notes'}</p>
+                    <p><strong>Category:</strong> ${landmark.category || 'N/A'}</p> 
+                    <p><strong>Location:</strong> ${locationString}</p>
+                    <p><em>Added: ${landmark.createdAt ? new Date(landmark.createdAt).toLocaleString() : 'N/A'}</em></p>
+                    ${landmark.updatedAt ? `<p><em>Updated: ${new Date(landmark.updatedAt).toLocaleString()}</em></p>` : ''}
+                    ${landmark.visited && landmark.visited_date ? `<p><strong>Visited on:</strong> ${new Date(landmark.visited_date).toLocaleDateString()}</p>` : ''}
+
+                    <div class="actions">
+                        <button class="edit-btn" onclick="showEditLandmarkModal('${landmark.id}')">Edit</button>
+                        <button class="delete-btn" onclick="deleteLandmark('${landmark.id}')">Delete</button>
+                        ${!landmark.visited ? 
+                            `<button class="visit-btn" onclick="toggleVisitStatus('${landmark.id}', true)">Mark as Visited</button>` : 
+                            `<button class="visit-btn" style="background-color:#6c757d" onclick="toggleVisitStatus('${landmark.id}', false)">Mark as Not Visited</button>`
+                         }
+                     </div>
+                `;
+                landmarksContainer.appendChild(div);
+            });
+        }
+
+        // Populate select dropdown for recording visits - REMOVING
+        /*
+        function populateVisitLandmarkSelect(landmarks) {
+           ...
+        }
+        */
+
+
+        // Add a new landmark (renamed from addLandmark)
+        async function saveNotes() {
+            if (!selectedLocation) {
+                 alert('No location selected on the map.');
+                 return;
+            }
+            
+            const landmarkData = {
+                id: landmarkIdInput.value,  // Add the user-provided ID
+                name: landmarkNameInput.value,
+                location: {
+                    lat: selectedLocation.lat,
+                    lng: selectedLocation.lng
+                },
+                description: landmarkDescInput.value,
+                notes: landmarkNotesInput.value,
+                category: landmarkCategoryInput.value
+            };
+
+            if (!landmarkData.id || !landmarkData.name) {
+                alert('Please fill in both the landmark ID and name.');
+                return;
+            }
+
+            try {
+                const response = await fetch('/api/landmarks', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(landmarkData)
+                });
+                if (!response.ok) {
+                     const errorData = await response.json();
+                     throw new Error(errorData.message || `HTTP error! status: ${response.status}`);
+                 }
+                closeModal('addNotesModal');
+                showSuccess('Landmark added successfully!');
+                await fetchLandmarks();
+                selectedLocation = null;
+                selectedCoordsDiv.textContent = 'No location selected';
+                if (marker) {
+                    map.removeLayer(marker);
+                    marker = null;
+                }
+            } catch (error) {
+                console.error('Error adding landmark:', error);
+                alert(`Failed to add landmark: ${error.message}`);
+            }
+        }
+
+         // Show Edit Landmark Modal and pre-fill form
+         async function showEditLandmarkModal(id) {
+             try {
+                 const response = await fetch(`/api/landmarks/${id}`);
+                 if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+                 const landmark = await response.json();
+
+                 // Store the original ID in a data attribute
+                 editLandmarkIdInput.value = landmark.id || landmark._id || '';
+                 editLandmarkIdInput.setAttribute('data-original-id', landmark.id || landmark._id || '');
+                 editLandmarkIdInput.readOnly = true; // Make ID field read-only
+                 
+                 editLandmarkNameInput.value = landmark.name || '';
+                 editLandmarkDescInput.value = landmark.description || '';
+                 editLandmarkNotesInput.value = landmark.notes || '';
+                 editLandmarkCategoryInput.value = landmark.category || 'historical';
+
+                 showModal('editLandmarkModal');
+             } catch (error) {
+                 console.error('Error fetching landmark details for edit:', error);
+                 alert('Could not load landmark details for editing: ' + error.message);
+             }
+         }
+
+
+        // Update an existing landmark
+        async function updateLandmark() {
+            const originalId = editLandmarkIdInput.getAttribute('data-original-id');
+            if (!originalId) {
+                alert('Cannot update landmark: Original ID is missing.');
+                return;
+            }
+
+            const landmarkData = {
+                name: editLandmarkNameInput.value,
+                description: editLandmarkDescInput.value,
+                notes: editLandmarkNotesInput.value,
+                category: editLandmarkCategoryInput.value
+            };
+
+            if (!landmarkData.name) {
+                alert('Please fill in the landmark name.');
+                return;
+            }
+
+            try {
+                const response = await fetch(`/api/landmarks/${originalId}`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(landmarkData)
+                });
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    throw new Error(errorData.message || `HTTP error! status: ${response.status}`);
+                }
+                closeModal('editLandmarkModal');
+                showSuccess('Landmark updated successfully!');
+                await fetchLandmarks();
+            } catch (error) {
+                console.error('Error updating landmark:', error);
+                alert(`Failed to update landmark: ${error.message}`);
+            }
+        }
+
+        // Delete a landmark
+        async function deleteLandmark(id) {
+            if (!confirm('Are you sure you want to delete this landmark? This action cannot be undone.')) {
+                return;
+            }
+
+            try {
+                const response = await fetch(`/api/landmarks/${id}`, { method: 'DELETE' });
+                 if (!response.ok && response.status !== 204) { // 204 No Content is also OK
+                     const errorData = await response.json();
+                     throw new Error(errorData.message || `HTTP error! status: ${response.status}`);
+                 }
+                showSuccess('Landmark deleted successfully!');
+                await fetchLandmarks(); // Refresh list and map
+            } catch (error) {
+                console.error('Error deleting landmark:', error);
+                alert(`Failed to delete landmark: ${error.message}`);
+            }
+        }
+
+
+        // --- Visited Landmarks Functionality ---
+
+        // Show modal to record a visit for a specific landmark - REMOVING
+        /*
+        function showRecordVisitModal(landmarkId, landmarkName) {
+           ...
+        }
+        */
+
+        // Record a landmark visit - REMOVING
+        /*
+        async function recordVisit(event) {
+            ...
+         }
+         */
+         
+        // --- Restore toggleVisitStatus --- 
+        async function toggleVisitStatus(id, newStatus) {
+            try {
+                const response = await fetch(`/api/landmarks/${id}`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ visited: newStatus }) // Only send visited status
+                });
+                if (!response.ok) {
+                     const errorData = await response.json();
+                     throw new Error(errorData.message || `HTTP error! status: ${response.status}`);
+                }
+                showSuccess(`Landmark marked as ${newStatus ? 'visited' : 'not visited'} successfully!`);
+                await fetchLandmarks(); // Refresh list and map
+            } catch (error) {
+                console.error('Error updating visit status:', error);
+                alert(`Failed to update visit status: ${error.message}`);
+            }
+        }
+
+
+        // Fetch visited landmarks history
+        async function fetchVisitedLandmarks() {
+            try {
+                const response = await fetch('/api/landmarks');
+                if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+                const landmarks = await response.json();
+                // Sadece visited olanları filtrele
+                const visitedLandmarks = landmarks.filter(landmark => landmark.visited === true);
+                displayVisitedLandmarks(visitedLandmarks);
+            } catch (error) {
+                console.error('Error fetching visited landmarks:', error);
+                document.getElementById('visitedLandmarksContainer').innerHTML = '<p>Error loading visit history.</p>';
+            }
+        }
+
+        // Display visited landmarks
+        function displayVisitedLandmarks(landmarks) {
+            const container = document.getElementById('visitedLandmarksContainer');
+            container.innerHTML = ''; // Clear previous list
+            
+            if (!landmarks || landmarks.length === 0) {
+                container.innerHTML = '<p>No visit history found.</p>';
+                return;
+            }
+
+            // Sort by visit date if available
+            landmarks.sort((a, b) => {
+                if (a.visited_date && b.visited_date) {
+                    return new Date(b.visited_date) - new Date(a.visited_date);
+                }
+                return 0;
+            });
+
+            landmarks.forEach(landmark => {
+                const div = document.createElement('div');
+                div.className = 'landmark-item visited';
+                
+                div.innerHTML = `
+                    <h4>${landmark.name}</h4>
+                    <p><strong>Category:</strong> ${landmark.category || 'N/A'}</p>
+                    <p><strong>Location:</strong> ${landmark.location ? `Lat: ${landmark.location.lat.toFixed(5)}, Lng: ${landmark.location.lng.toFixed(5)}` : 'Location unavailable'}</p>
+                    <p><strong>Visit Date:</strong> ${landmark.visited_date ? new Date(landmark.visited_date).toLocaleDateString() : 'Date not recorded'}</p>
+                    ${landmark.description ? `<p><strong>Notes:</strong> ${landmark.description}</p>` : ''}
+                    <div class="actions">
+                        <button class="visit-btn" style="background-color:#6c757d" onclick="toggleVisitStatus('${landmark.id}', false)">Mark as Not Visited</button>
+                    </div>
+                `;
+                container.appendChild(div);
+            });
+        }
+
+         // Show Edit Visit Record Modal
+         async function showEditVisitRecordModal(visitId) {
+             try {
+                 // Fetch the specific visit record
+                 const response = await fetch(`/api/visited/${visitId}`);
+                 if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+                 const visit = await response.json();
+
+                 // Populate the edit form
+                 editVisitRecordIdInput.value = visit.id;
+                 editVisitLandmarkIdInput.value = visit.landmark_id; // Store landmark ID
+                 // Display landmark name (read-only or just for info)
+                 const landmarkNameSpan = document.getElementById('editVisitLandmarkName');
+                 if(landmarkNameSpan) landmarkNameSpan.textContent = visit.landmark ? visit.landmark.name : 'Loading...';
+                 editVisitDateInput.value = visit.visited_date.split('T')[0]; // Format date for input type="date"
+                 editVisitorNameInput.value = visit.visitor_name;
+
+                 showModal('editVisitRecordModal');
+             } catch (error) {
+                 console.error('Error fetching visit details for edit:', error);
+                 alert('Could not load visit details for editing.');
+             }
+         }
+
+         // Update Visit Record
+         async function updateVisitRecord(event) {
+             event.preventDefault();
+             const visitId = editVisitRecordIdInput.value;
+             const visitData = {
+                 landmark_id: editVisitLandmarkIdInput.value, // Make sure this ID is correctly passed
+                 visited_date: editVisitDateInput.value,
+                 visitor_name: editVisitorNameInput.value
+             };
+
+             if (!visitId || !visitData.visited_date || !visitData.visitor_name) {
+                 alert('Please ensure all fields are filled correctly.');
+                 return;
+             }
+
+             try {
+                 const response = await fetch(`/api/visited/${visitId}`, {
+                     method: 'PUT',
+                     headers: { 'Content-Type': 'application/json' },
+                     body: JSON.stringify(visitData)
+                 });
+                 if (!response.ok) {
+                     const errorData = await response.json();
+                     throw new Error(errorData.message || `HTTP error! status: ${response.status}`);
+                 }
+                 closeModal('editVisitRecordModal');
+                 showSuccess('Visit record updated successfully!');
+                 await fetchVisitedLandmarks(); // Refresh the visited list
+                 // Optionally refresh the main landmark list if visit status affects it
+                 // await fetchLandmarks();
+             } catch (error) {
+                 console.error('Error updating visit record:', error);
+                 alert(`Failed to update visit record: ${error.message}`);
+             }
+         }
+
+
+        // Delete a visited landmark record
+        async function deleteVisitedRecord(id) {
+            if (!confirm('Are you sure you want to delete this visit record? This action cannot be undone.')) {
+                return;
+            }
+
+            try {
+                const response = await fetch(`/api/visited/${id}`, { method: 'DELETE' });
+                 if (!response.ok && response.status !== 204) {
+                     const errorData = await response.json();
+                     throw new Error(errorData.message || `HTTP error! status: ${response.status}`);
+                 }
+                showSuccess('Visit record deleted successfully!');
+                await fetchVisitedLandmarks(); // Refresh list
+            } catch (error) {
+                console.error('Error deleting visit record:', error);
+                alert(`Failed to delete visit record: ${error.message}`);
+            }
+        }
+
+        // --- Visiting Plan Functionality ---
+
+        // Populate landmark selection checkboxes for creating a plan
+        async function populateLandmarkSelectionForPlan() {
+            const container = document.getElementById('landmarkSelection');
+            if (!container) {
+                console.error('landmarkSelection container not found');
+                return;
+            }
+            container.innerHTML = '<p>Loading landmarks...</p>'; // Add loading indicator
+
+            try {
+                const response = await fetch('/api/landmarks');
+                if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+                const landmarks = await response.json();
+
+                container.innerHTML = ''; // Clear loading/previous list
+
+                if (!landmarks || landmarks.length === 0) {
+                    container.innerHTML = '<p>No landmarks available to add to a plan.</p>';
+                    return;
+                }
+
+                landmarks.forEach(landmark => {
+                    const div = document.createElement('div');
+                    div.className = 'landmark-selection-item';
+                    // Store name and category in data attributes on the checkbox
+                    div.innerHTML = `
+                        <div class="landmark-checkbox-group">
+                            <input type="checkbox" 
+                                   id="plan_lm_${landmark.id || landmark._id}" 
+                                   name="plan_landmark" 
+                                   value="${landmark.id || landmark._id}" 
+                                   data-name="${landmark.name || 'Unknown'}" 
+                                   data-category="${landmark.category || 'N/A'}" 
+                                   class="landmark-checkbox">
+                            <label for="plan_lm_${landmark.id || landmark._id}">${landmark.name || 'Unnamed Landmark'} (${landmark.category || 'N/A'})</label>
+                        </div>
+                        <div class="landmark-notes" style="display: none;">
+                             <label for="notes_${landmark.id || landmark._id}">Notes for ${landmark.name || 'Unnamed Landmark'}:</label>
+                             <textarea id="notes_${landmark.id || landmark._id}" rows="2" placeholder="Add specific notes for this landmark..."></textarea>
+                        </div>
+                    `;
+                    container.appendChild(div);
+
+                    // Show notes field when checkbox is checked
+                    const checkbox = div.querySelector('input[type="checkbox"]');
+                    const notesDiv = div.querySelector('.landmark-notes');
+                    checkbox.addEventListener('change', (event) => {
+                        notesDiv.style.display = event.target.checked ? 'block' : 'none';
+                    });
+                });
+
+            } catch (error) {
+                console.error('Error fetching landmarks for plan:', error);
+                if (container) {
+                    container.innerHTML = '<p>Error loading landmarks for plan.</p>';
+                }
+            }
+        }
+
+
+        // Create a new visiting plan
+        async function createVisitingPlan() {
+            const planName = document.getElementById('planName').value;
+            const visitorName = document.getElementById('planVisitorName').value;
+            const generalNotes = document.getElementById('planGeneralNotes').value;
+            const selectedLandmarks = [];
+
+            document.querySelectorAll('input[name="plan_landmark"]:checked').forEach(checkbox => {
+                const landmarkId = checkbox.value;
+                const landmarkName = checkbox.dataset.name; // Get name from data attribute
+                const landmarkCategory = checkbox.dataset.category; // Get category from data attribute
+                const notesElement = document.getElementById(`notes_${landmarkId}`);
+                const notes = notesElement ? notesElement.value : '';
+                selectedLandmarks.push({
+                    landmark_id: landmarkId,
+                    name: landmarkName,
+                    category: landmarkCategory,
+                    notes: notes
+                });
+            });
+
+            if (!planName || !visitorName || selectedLandmarks.length === 0) {
+                alert('Please provide a plan name, visitor name, and select at least one landmark.');
+                return;
+            }
+
+            const planData = {
+                plan_name: planName,
+                visitor_name: visitorName,
+                general_notes: generalNotes,
+                landmarks: selectedLandmarks // Now includes name and category
+            };
+
+            try {
+                const response = await fetch('/api/visiting-plans', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(planData)
+                });
+
+                if (!response.ok) {
+                    // Try to parse JSON error first
+                    let errorData;
+                    try {
+                         errorData = await response.json();
+                    } catch (e) {
+                         // If response is not JSON, read as text
+                         const errorText = await response.text();
+                         throw new Error(`HTTP error ${response.status}: ${errorText}`);
+                    }
+                     throw new Error(errorData.message || `HTTP error! status: ${response.status}`);
+                }
+
+                closeModal('createVisitingPlanModal');
+                showSuccess('Visiting plan created successfully!');
+                
+                // Clear form fields
+                document.getElementById('planName').value = '';
+                document.getElementById('planVisitorName').value = '';
+                document.getElementById('planGeneralNotes').value = '';
+                document.querySelectorAll('input[name="plan_landmark"]:checked').forEach(checkbox => {
+                    checkbox.checked = false;
+                    // Also hide the notes div associated with the checkbox
+                    const notesDiv = document.getElementById(`notes_${checkbox.value}`)?.closest('.landmark-notes');
+                    if (notesDiv) notesDiv.style.display = 'none';
+                });
+                
+                // Refresh visiting plans list if the modal is open
+                if (document.getElementById('visitingPlansModal').style.display === 'block') {
+                    await fetchVisitingPlans();
+                }
+            } catch (error) {
+                console.error('Error creating visiting plan:', error);
+                alert(`Failed to create visiting plan: ${error.message}`);
+            }
+        }
+
+        // Fetch all visiting plans
+        async function fetchVisitingPlans() {
+            console.log('Fetching visiting plans...'); // Log start
+            const container = document.getElementById('visitingPlansContainer');
+            try {
+                const response = await fetch('/api/visiting-plans');
+                console.log('Fetch response status:', response.status); // Log status
+                if (!response.ok) {
+                    const errorText = await response.text(); // Get potential error text
+                    console.error('Fetch error response text:', errorText);
+                    throw new Error(`HTTP error! status: ${response.status} - ${errorText}`);
+                }
+                const plans = await response.json();
+                console.log('Fetched plans:', plans); // Log fetched data
+                displayVisitingPlans(plans);
+            } catch (error) {
+                console.error('Error fetching visiting plans:', error); // Log detailed error
+                if(container) {
+                    container.innerHTML = `<p>Error loading visiting plans: ${error.message}</p>`;
+                } else {
+                    console.error('visitingPlansContainer not found!')
+                }
+            }
+        }
+
+        // Display visiting plans
+        function displayVisitingPlans(plans) {
+            const container = document.getElementById('visitingPlansContainer');
+            container.innerHTML = '';
+            
+            if (!plans || plans.length === 0) {
+                container.innerHTML = '<p>No visiting plans created yet.</p>';
+                return;
+            }
+
+            plans.forEach(plan => {
+                const div = document.createElement('div');
+                div.className = 'plan-item';
+                
+                let landmarksHtml = '<div class="plan-landmarks"><ul>';
+                if (plan.landmarks && Array.isArray(plan.landmarks)) {
+                    plan.landmarks.forEach(item => {
+                        landmarksHtml += `
+                            <li>
+                                <strong>${item.landmark_name || item.name || 'Unknown Landmark'}</strong>
+                                ${item.category ? ` (${item.category})` : ''}
+                                ${item.notes ? `<p><em>Notes:</em> ${item.notes}</p>` : ''}
+                            </li>`;
+                    });
+                }
+                landmarksHtml += '</ul></div>';
+
+                div.innerHTML = `
+                    <h4>${plan.plan_name}</h4>
+                    <p><strong>Visitor:</strong> ${plan.visitor_name}</p>
+                    ${plan.general_notes ? `<p><strong>General Notes:</strong> ${plan.general_notes}</p>` : ''}
+                    <p><strong>Created:</strong> ${new Date(plan.created_at || plan.createdAt || Date.now()).toLocaleString()}</p>
+                    <p><strong>Landmarks:</strong></p>
+                    ${landmarksHtml}
+                    <div class="actions">
+                        <button class="delete-btn" onclick="deleteVisitingPlan('${plan._id || plan.id}')">Delete Plan</button>
+                    </div>
+                `;
+                container.appendChild(div);
+            });
+        }
+
+        // Delete visiting plan
+        async function deleteVisitingPlan(planId) {
+            if (!confirm('Are you sure you want to delete this visiting plan?')) {
+                return;
+            }
+
+            try {
+                const response = await fetch(`/api/visiting-plans/${planId}`, {
+                    method: 'DELETE'
+                });
+                
+                if (!response.ok && response.status !== 204) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                
+                showSuccess('Visiting plan deleted successfully!');
+                await fetchVisitingPlans();
+            } catch (error) {
+                console.error('Error deleting visiting plan:', error);
+                alert(`Failed to delete visiting plan: ${error.message}`);
+            }
+        }
+
+
+        // Attach form submit listeners
+        // document.getElementById('addLandmarkForm').addEventListener('submit', saveNotes); // No form with this ID anymore
+        // document.getElementById('editLandmarkForm').addEventListener('submit', updateLandmark); // Using onclick
+        // document.getElementById('visitRecordForm').addEventListener('submit', recordVisit); // Keep this for the new form
+        // document.getElementById('editVisitRecordForm').addEventListener('submit', updateVisitRecord); // Using onclick
+        // document.getElementById('createPlanForm').addEventListener('submit', createVisitingPlan); // Using onclick
+
+        // Initialize landmarks list
+        fetchLandmarks();
+    </script>
+</body>
+</html> 
