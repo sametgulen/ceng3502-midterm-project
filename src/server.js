@@ -3,7 +3,7 @@ const cors = require('cors');
 const bodyParser = require('body-parser');
 const path = require('path');
 
-// Import routes
+// Import routes for different functionalities
 const landmarkRoutes = require('./routes/landmarks');
 const visitedRoutes = require('./routes/visited');
 const visitingPlanRoutes = require('./routes/visitingPlans');
@@ -11,25 +11,26 @@ const visitingPlanRoutes = require('./routes/visitingPlans');
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-// Middleware
-app.use(cors());
-app.use(bodyParser.json());
-app.use(express.static(path.join(__dirname, 'public')));
+// Middleware setup
+app.use(cors()); // Enable CORS for cross-origin requests
+app.use(bodyParser.json()); // Parse JSON request bodies
+app.use(express.static(path.join(__dirname, 'public'))); // Serve static files
 
-// Routes
-app.use('/api/landmarks', landmarkRoutes);
-app.use('/api/visited', visitedRoutes);
-app.use('/api/visiting-plans', visitingPlanRoutes);
+// API routes
+app.use('/api/landmarks', landmarkRoutes); // Routes for landmarks
+app.use('/api/visited', visitedRoutes); // Routes for visited landmarks
+app.use('/api/visiting-plans', visitingPlanRoutes); // Routes for visiting plans
 
-// Serve index.html for any other GET request not handled by API routes
+// Fallback route to serve the frontend
 app.get('*', (req, res) => {
-    // Avoid sending HTML for API-like paths that weren't matched
+    // Return 404 for unmatched API routes
     if (req.path.startsWith('/api/')) {
         return res.status(404).json({ message: 'API endpoint not found' });
     }
     res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
 
+// Start the server
 app.listen(PORT, () => {
     console.log(`Server is running on port ${PORT}`);
-}); 
+});

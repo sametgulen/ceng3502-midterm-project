@@ -5,10 +5,9 @@ const crypto = require('crypto'); // For generating unique IDs
 // In-memory store for visiting plans (Replace with database logic later)
 let visitingPlans = [];
 
-// GET /api/visiting-plans - Get all visiting plans
+// GET /api/visiting-plans - Retrieve all visiting plans
 router.get('/', (req, res) => {
     try {
-        // In a real app, fetch plans associated with the logged-in user, etc.
         res.status(200).json(visitingPlans);
     } catch (error) {
         console.error("Error fetching visiting plans:", error);
@@ -21,18 +20,20 @@ router.post('/', (req, res) => {
     try {
         const { plan_name, visitor_name, general_notes, landmarks } = req.body;
 
+        // Validate required fields
         if (!plan_name || !visitor_name || !landmarks || !Array.isArray(landmarks)) {
             return res.status(400).json({ message: "Missing required fields: plan_name, visitor_name, and landmarks array." });
         }
 
+        // Create a new visiting plan
         const newPlan = {
             _id: crypto.randomUUID(), // Generate a unique ID
             plan_name,
             visitor_name,
             general_notes: general_notes || '',
-            landmarks: landmarks.map(lm => ({ // Ensure landmarks have consistent structure
+            landmarks: landmarks.map(lm => ({
                 landmark_id: lm.landmark_id,
-                name: lm.name || 'Unknown Landmark', // Store name for easier display later if needed
+                name: lm.name || 'Unknown Landmark',
                 category: lm.category,
                 notes: lm.notes || ''
             })),
@@ -41,7 +42,7 @@ router.post('/', (req, res) => {
 
         visitingPlans.push(newPlan);
         console.log("Created new plan:", newPlan);
-        res.status(201).json(newPlan); // Return the created plan
+        res.status(201).json(newPlan);
 
     } catch (error) {
         console.error("Error creating visiting plan:", error);
@@ -49,7 +50,7 @@ router.post('/', (req, res) => {
     }
 });
 
-// DELETE /api/visiting-plans/:id - Delete a visiting plan
+// DELETE /api/visiting-plans/:id - Delete a visiting plan by ID
 router.delete('/:id', (req, res) => {
     try {
         const { id } = req.params;
@@ -61,7 +62,7 @@ router.delete('/:id', (req, res) => {
         }
 
         console.log("Deleted plan with ID:", id);
-        res.status(204).send(); // No content on successful deletion
+        res.status(204).send();
 
     } catch (error) {
         console.error("Error deleting visiting plan:", error);
@@ -69,5 +70,4 @@ router.delete('/:id', (req, res) => {
     }
 });
 
-
-module.exports = router; 
+module.exports = router;
